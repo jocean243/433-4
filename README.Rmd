@@ -1,0 +1,111 @@
+---
+title: "Week 4 HW"
+author: "JIAYI HONG"
+date: "9/29/2021"
+output: github_document
+---
+
+```{r}
+library(ggplot2)
+library(lubridate)
+library(nycflights13)
+library(dplyr)
+```
+
+Flight delay has long been one of the most heated topics for air travelers. However, by analyzing data on domestic flights departed from NYC during a particular period of time in 2013, I found that there are some patterns associated with delayed flights. In general, flights departing from LGA scheduled between 5 AM and 10 AM in Fall months (September, October, November) operated by US, MQ, and DL have the best punctuality rate. 
+
+
+When considering merely time and origin, it is obvious that the probability of flight delay increases as time goes on in all three airports. For example, while 15~35% of flights scheduled during morning rush hours were delayed, in the evening this proportion rose to 50~65%. In short, the best time-origin combination in terms of punctuality is LGA in the morning rush hours between 5 and 10 AM.
+
+```{r}
+flights %>%
+  mutate(sch_dep_hour = sched_dep_time %/% 100) %>% 
+  group_by(sch_dep_hour, origin) %>%
+  summarise(all_scheduled = n(),
+            delayed = sum(dep_delay > 0 
+                          | (is.na(dep_delay) & !is.na(sched_dep_time)) #canceled
+                          )
+            ) %>%
+  mutate(delay_pct = delayed / all_scheduled *100) %>%
+  ggplot(aes(x = sch_dep_hour, y = delay_pct, color = origin))+
+  geom_line()+
+  facet_wrap(~ origin)+
+  labs(title = "General Delay", x = "Hour of a Day", y = "Percentage of Delay")+
+  theme(plot.title = element_text(hjust = 0.5))
+
+
+
+
+flights %>%
+  mutate(sch_dep_hour = sched_dep_time %/% 100,
+         hours = format(time_hour, format = "%H")) %>% # or hour(time_hour) because it's a POSIXct
+  group_by(sch_dep_hour, origin) %>%
+  summarise(all_scheduled = n(),
+            delayed = sum(dep_delay > 0 
+                          | (is.na(dep_delay) & !is.na(sched_dep_time)) #canceled
+                          )
+            ) %>%
+  filter(all_scheduled >= 10) %>%
+  mutate(delay_pct = delayed / all_scheduled *100) %>%
+  ggplot(aes(x = sch_dep_hour, y = delay_pct, color = origin))+
+  geom_line()+
+  facet_wrap(~ origin)+
+  #geom_smooth()+
+  labs(title = "General Delay (outlier removed)", x = "Hour of a Day", y = "Percentage of Delay")+
+  theme(plot.title = element_text(hjust = 0.5))
+```
+In addition, in terms of carriers, most carriers have best punctuality performance in the morning between 5 and 10 AM and gradually get worse during the day. In particular, US, MQ, and DL all have around 10% of their morning flights delayed, which is lower than that of the rest of airlines. 
+
+
+```{r}
+flights %>%
+  mutate(date = format(time_hour, format = "%Y/%m/%d"),
+    sch_dep_hour = sched_dep_time %/% 100) %>%
+  group_by(sch_dep_hour, origin, carrier) %>%
+  summarise(all_scheduled = n(),
+            delayed = sum(dep_delay > 0 
+                          | (is.na(dep_delay) & !is.na(sched_dep_time)) #canceled
+                          )
+            ) %>%
+  mutate(delay_pct = delayed / all_scheduled *100) %>%
+  ggplot(aes(x = sch_dep_hour, y = delay_pct, color = origin))+
+  geom_line()+
+  facet_wrap(~ carrier)+
+  labs(title = "Delay According to Carriers and Origin", x = "Hour of a Day", y = "Percentage of Delay")+
+  theme(plot.title = element_text(hjust = 0.5))
+```
+Moreover, from a seasonal perspective, fall months have the best punctuality statistics over the year. Compared with those of the other months, the 75th percentile as well as IQR of percentage of delayed flights in September, October, and November are the lowest. Therefore, the best season to fly from NYC is Fall.
+
+```{r}
+aa = flights %>%
+  mutate(date = format(time_hour, format = "%Y/%m/%d"),
+    sch_dep_hour = sched_dep_time %/% 100,
+    season = month(time_hour))
+aa$season = factor(aa$season, levels = c(1:12), labels = c(
+  rep("Winter", 2),
+  rep(c("Spring", "Summer", "Fall"), each = 3), 
+  "Winter")
+  )
+
+aa = aa %>%
+  group_by(sch_dep_hour, origin, carrier, season) %>%
+  summarise(all_scheduled = n(),
+            delayed = sum(dep_delay > 0 
+                          | (is.na(dep_delay) & !is.na(sched_dep_time)) #canceled
+                          )
+            ) %>%
+  mutate(delay_pct = delayed / all_scheduled *100) 
+
+
+aa %>%
+  ggplot(aes(x = sch_dep_hour, y = delay_pct, color =  season))+
+  geom_point()+
+  facet_wrap(~ origin)+
+  labs(title = "Seasonal Delay by Origin", x = "Hour of a Day", y = "Percentage of Delay")
+
+aa %>%
+  ggplot(aes(x = sch_dep_hour, y = delay_pct, color =  season))+
+  geom_boxplot()+
+  facet_wrap(~ origin)+
+  labs(title = "Seasonal Delay by Origin", x = "Hour of a Day", y = "Percentage of Delay")
+```
