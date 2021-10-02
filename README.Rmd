@@ -101,11 +101,13 @@ aa %>%
   ggplot(aes(x = sch_dep_hour, y = delay_pct, color =  season))+
   geom_point()+
   facet_wrap(~ origin)+
-  labs(title = "Seasonal Delay by Origin", x = "Hour of a Day", y = "Percentage of Delay")
+  labs(title = "Seasonal Delay by Origin", x = "Hour of a Day", y = "Percentage of Delay")+
+  theme(plot.title = element_text(hjust = 0.5))
 
 aa %>%
   ggplot(aes(x = sch_dep_hour, y = delay_pct, color =  season))+
   geom_boxplot()+
   facet_wrap(~ origin)+
-  labs(title = "Seasonal Delay by Origin", x = "Hour of a Day", y = "Percentage of Delay")
+  labs(title = "Seasonal Delay by Origin", x = "Hour of a Day", y = "Percentage of Delay")+
+  theme(plot.title = element_text(hjust = 0.5))
 ```
